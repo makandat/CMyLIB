@@ -27,6 +27,7 @@
 #define MY_MB_STRING    31
 #define MY_WIDE_STRING  32
 #define MY_STRUCT  33
+#define MY_SIZE    34
 
 /* バッファサイズ */
 #define MY_BUFSIZE 1024
@@ -57,7 +58,21 @@ uint16_t my_object_hash(MyObject* obj);
 MY_HEAP char* my_object_string(MyObject* obj);
 
 /* オブジェクト化 */
-MY_HEAP MyObject* my_wrap(void* data, MY_DATATYPE type, int size, size_t length);
+MY_HEAP MyObject* my_object_wrap(void* data, MY_DATATYPE type, int size, size_t length);
+
+/* データを取り出す */
+int32_t my_object_int32(MyObject*);
+int64_t my_object_int64(MyObject*);
+size_t my_object_size(MyObject*);
+double my_object_double(MyObject*);
+char* my_object_string(MyObject*);
+wchar_t* my_object_wstring(MyObject*);
+
+/* 複製を作る */
+MY_HEAP MyObject* my_object_copy(MyObject* obj);
+
+/* 解放 */
+void my_object_free(MyObject* obj);
 
 #endif
 
