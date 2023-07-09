@@ -6,6 +6,11 @@ inline void my_on_exit(func0_t handler) {
     atexit(handler);
 }
 
+/* シグナル SIGUSR1 を発生させる。 */
+inline void my_raise_user() {
+    raise(SIGUSR1);
+}
+
 /* シグナル sig が発生したときのハンドラを登録する。 */
 inline void my_on_signal(int sig, func1_t handler) {
     signal(sig, handler);
@@ -17,7 +22,7 @@ inline void my_on_int(func1_t handler) {
 }
 
 /* メモリの不正アクセスがあったときのハンドラを登録する。 */
-inline void my_on_badacess(func1_t handler) {
+inline void my_on_access(func1_t handler) {
     signal(SIGSEGV, handler);
 }
 
@@ -27,13 +32,16 @@ inline void my_on_abort(func1_t handler) {
 }
 
 /* ユーザ定義シグナルが発せられたときのハンドラを登録する。*/
-inline void my_on_siguser(func1_t handler) {
+inline void my_on_user(func1_t handler) {
     signal(SIGUSR1, handler);
 }
 
 /* longjmp を行ったときのハンドラを登録する。 */
-inline void my_on_jump(jmp_buf* saved, func0_t handler) {
-    if (setjmp(*saved)) {
+void my_on_jump(jmp_buf* saved, func0_t setup, func0_t handler) {
+    if (setjmp(*saved) == 0) {
+        setup();
+    }
+    else {
         handler();
     }
 }
@@ -52,7 +60,7 @@ void my_on_noargs(int argc, const char* message) {
 }
 
 /* メッセージを stdout に表示してから stdin から１行入力する。 */
-MY_HEAP const char* my_input(const char* message) {
+MY_HEAP char* my_input(const char* message) {
     char s[1024];
     if (message != NULL) {
         fputs(message, stdout);
@@ -66,13 +74,24 @@ MY_HEAP const char* my_input(const char* message) {
 
 /* コンソール・エスケープコードを出力し続けてメッセージを stdout へ出力する。esccode=NULL の場合はエスケープコードは出力しない。 */
 void my_print(const char* esccode, const char* message) {
-    size_t size = strlen(esccode) + strlen(message) + 1;
+    char* escstr = (char*)esccode;
+    if (esccode == NULL) {
+        escstr = "\e[m";
+    }
+    size_t size = strlen(escstr) + strlen(message) + 1;
     char* buf = (char*)malloc(size);
-    strcpy(buf, esccode);
+    strcpy(buf, escstr);
     strcat(buf, message);
     fputs(buf, stdout);
+    fputs("\e[m", stdout);
     free(buf);
     return;
+}
+
+/* my_print() と同じだが message の後に改行を出力する。 */
+void my_println(const char* esccode, const char* message) {
+    my_print(esccode, message);
+    putchar('\n');
 }
 
 /* メッセージを stdout (exitcode=0) または stderr (exitcode!=0) に出力して、プログラムを exitcode を返し終了する。 */
