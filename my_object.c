@@ -107,7 +107,7 @@ double my_object_double(MyObject* obj) {
 }
 
 /* 文字列を取り出す。 */
-char* my_object_string(MyObject* obj) {
+char* my_object_str(MyObject* obj) {
     char* p = NULL;
     if (obj->type == MY_STRING) {
         p = *(char**)(obj->data);
@@ -116,7 +116,7 @@ char* my_object_string(MyObject* obj) {
 }
 
 /* ワイド文字列を取り出す。 */
-wchar_t* my_object_wstring(MyObject* obj) {
+wchar_t* my_object_wstr(MyObject* obj) {
     wchar_t* p = NULL;
     if (obj->type == MY_WIDE_STRING) {
         p = *(wchar_t**)(obj->data);

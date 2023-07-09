@@ -65,8 +65,8 @@ int32_t my_object_int32(MyObject*);
 int64_t my_object_int64(MyObject*);
 size_t my_object_size(MyObject*);
 double my_object_double(MyObject*);
-char* my_object_string(MyObject*);
-wchar_t* my_object_wstring(MyObject*);
+char* my_object_str(MyObject*);
+wchar_t* my_object_wstr(MyObject*);
 
 /* 複製を作る */
 MY_HEAP MyObject* my_object_copy(MyObject* obj);
