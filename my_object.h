@@ -10,6 +10,7 @@
 
 /* データの型 */
 #define MY_DATATYPE  uint32_t
+#define MY_EMPTY  0
 #define MY_INT8   1
 #define MY_INT16  2
 #define MY_INT32  3
@@ -71,8 +72,11 @@ wchar_t* my_object_wstr(MyObject*);
 /* 複製を作る */
 MY_HEAP MyObject* my_object_copy(MyObject* obj);
 
-/* 解放 */
-void my_object_free(MyObject* obj);
+/* 値が等しい */
+bool my_object_equal(MyObject*, MyObject*);
+
+/* 同じオブジェクト */
+bool my_object_identical(MyObject*, MyObject*);
 
 #endif
 

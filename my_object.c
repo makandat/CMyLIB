@@ -6,8 +6,11 @@
 void my_object_release(MyObject* myobj) {
     if (myobj->refcount > 0)
         myobj->refcount--;
-    if (myobj->refcount == 0) {
+    if (myobj->refcount == 0 && myobj->type != MY_EMPTY) {
         free(myobj->data);
+        myobj->type = MY_EMPTY;
+        myobj->data = NULL;
+        free(myobj);
     }
 }
 
@@ -64,12 +67,6 @@ MY_HEAP MyObject* my_object_copy(MyObject* obj) {
     return cobj;
 }
 
-/* 解放 */
-void my_object_free(MyObject* obj) {
-    free(obj->data);
-    free(obj);
-}
-
 /* 整数を取り出す。 */
 int32_t my_object_int32(MyObject* obj) {
     int32_t n = 0;
@@ -110,7 +107,7 @@ double my_object_double(MyObject* obj) {
 char* my_object_str(MyObject* obj) {
     char* p = NULL;
     if (obj->type == MY_STRING) {
-        p = *(char**)(obj->data);
+        p = (char*)(obj->data);
     }
     return p;
 }
@@ -119,7 +116,44 @@ char* my_object_str(MyObject* obj) {
 wchar_t* my_object_wstr(MyObject* obj) {
     wchar_t* p = NULL;
     if (obj->type == MY_WIDE_STRING) {
-        p = *(wchar_t**)(obj->data);
+        p = (wchar_t*)(obj->data);
     }
     return p;
+}
+
+/* 値が等しい */
+bool my_object_equal(MyObject* a, MyObject* b) {
+    if (a->type != b->type)
+        return false;
+    if (a->size != b->size)
+        return false;
+    if (a->length != b->length)
+        return false;
+    size_t sz = a->size * a->length;
+    char* p = a->data;
+    char* q = b->data;
+    for (int i = 0; i < (int)sz; i++) {
+        if (memcmp(p, q, 1) == 0) {
+            continue;
+        }
+        else {
+            return false;
+        }
+        p++;
+        q++;
+    }
+    return true;
+}
+
+/* 同じオブジェクト */
+bool my_object_identical(MyObject* a, MyObject* b) {
+    if (a->type != b->type)
+        return false;
+    if (a->size != b->size)
+        return false;
+    if (a->length != b->length)
+        return false;
+    if (a->data != b->data)
+        return false;
+    return true;
 }
