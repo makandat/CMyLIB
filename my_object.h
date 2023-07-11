@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
+#include <wchar.h>
 
 /* データの型 */
 #define MY_DATATYPE  uint32_t
@@ -68,6 +69,15 @@ size_t my_object_size(MyObject*);
 double my_object_double(MyObject*);
 char* my_object_str(MyObject*);
 wchar_t* my_object_wstr(MyObject*);
+
+/* データを更新する。(型の変更は不可) */
+void my_object_set_int32(MyObject*, int32_t);
+void my_object_set_int64(MyObject*, int64_t);
+void my_object_set_size(MyObject*, size_t);
+void my_object_set_double(MyObject*, double);
+void my_object_set_str(MyObject*, char*);
+void my_object_set_wstr(MyObject*, wchar_t*);
+
 
 /* 複製を作る */
 MY_HEAP MyObject* my_object_copy(MyObject* obj);
