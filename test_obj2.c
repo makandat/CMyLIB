@@ -1,5 +1,5 @@
 /* test_obj2.c: */
-#include "mylib.h"
+#include "cmylib.h"
 
 /* main */
 int main(int argc, char* argv[]) {

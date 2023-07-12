@@ -1,5 +1,5 @@
 /* test_obj1.c : my_object_wrap(), my_object_string(), my_object_in32(), my_object_str(), my_object_release() */
-#include "mylib.h"
+#include "cmylib.h"
 
 /* main */
 int main(int argc, char* argv[]) {

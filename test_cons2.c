@@ -1,5 +1,5 @@
 /* test_cons2.c: try..catch シミュレーション */
-#include "mylib.h"
+#include "cmylib.h"
 
 // setjmp/longjmp が使う環境保存バッファ */
 jmp_buf env;

@@ -1,5 +1,5 @@
 /* test_cons1.c : my_on_noargs(), my_on_exit(), my_on_int(), my_input() */
-#include "mylib.h"
+#include "cmylib.h"
 
 void on_exit();
 void on_break(int);

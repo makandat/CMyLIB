@@ -1,5 +1,5 @@
 /* 端末エスケープ文字列のテスト */
-#include "mylib.h"
+#include "cmylib.h"
 
 /* main */
 int main(int argc, char** argv) {
