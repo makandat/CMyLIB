@@ -110,3 +110,7 @@ void my_lasterror(void) {
     fprintf(stderr, "errno=%d: %s\n", errno, strerror(errno));
 }
 
+/* ロケールを日本語環境に設定する。 */
+inline void my_locale() {
+    setlocale(LC_ALL, "");  
+}

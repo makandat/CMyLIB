@@ -8,6 +8,7 @@
 #include <setjmp.h>
 #include <errno.h>
 #include <assert.h>
+#include <locale.h>
 #include "my_object.h"
 
 /* コンソール・エスケープコード */
@@ -54,6 +55,7 @@ MY_HEAP char* my_input(const char* message);  // メッセージを stdout に�
 void my_print(const char* esccode, const char* message);  // コンソール・エスケープコードを出力し続けてメッセージを stdout へ出力する。esccode=NULL の場合はエスケープコードは出力しない。
 void my_println(const char* esccode, const char* message);  // コンソール・エスケープコードを出力し続けてメッセージを stdout へ出力する。esccode=NULL の場合はエスケープコードは出力しない。
 void my_exit(int exitcode, const char* message);  // メッセージを stdout (exitcode=0) または stderr (exitcode!=0) に出力して、プログラムを exitcode を返し終了する。
-void my_lasterror(void);  // 最後に発生したシステムエラーを stderr へ出力する。 
+void my_lasterror(void);  // 最後に発生したシステムエラーを stderr へ出力する。
+void my_locale(void);  // ロケールを日本語環境に設定する。 
 
 #endif
