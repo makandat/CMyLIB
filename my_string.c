@@ -464,7 +464,7 @@ bool my_string_endswith(MyString* str, char* s) {
 MY_HEAP MyString* my_string_new() {
     MyString* ret = (MyString*)malloc(sizeof(MyString));
     ret->refcount = 1;
-    ret->type = MY_STRING;
+    ret->type = MY_STRING_OBJECT;
     ret->size = 0;
     ret->length = 1;
     ret->data = NULL;
@@ -475,13 +475,36 @@ MY_HEAP MyString* my_string_new() {
 MY_HEAP MyStringArray* my_stringarray_new() {
     MyStringArray* ret = (MyStringArray*)malloc(sizeof(MyStringArray));
     ret->refcount = 1;
-    ret->type = MY_STRINGARRAY;
+    ret->type = MY_STRING_ARRAY;
     ret->size = 0;
     ret->length = 0;
     ret->first = NULL;
     ret->last  = NULL;
     return ret;
 }
+
+/* 文字列配列オブジェクトに文字列オブジェクトを追加する。*/
+void my_stringarray_append(MyStringArray* array, MyString* str) {
+    MyString* str2 = my_string_dup(str);
+    str2->next = NULL;
+    if (array->length == 0) {
+        array->first = str2;
+        array->last = str2;
+        array->length = 1;
+    }
+    else {
+        array->last->next = str2;
+        array->last = str2;
+        array->length += 1;
+    }
+}
+
+/* 文字列配列オブジェクトに文字列を追加する。 */
+void my_stringarray_append2(MyStringArray* array, char* s) {
+    MY_HEAP MyString* str = my_string_wrap(s);
+    my_stringarray_append(array, str);
+}
+
 
 /* n 個の文字からなる文字列を指定されたバッファにコピーする。 */
 void my_string_times(char* buf, char c, size_t n) {

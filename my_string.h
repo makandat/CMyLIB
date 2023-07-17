@@ -52,6 +52,8 @@ bool my_string_startswith(MyString* str, char* s); // 文字列の開始が指�
 bool my_string_endswith(MyString* str, char* s); // 文字列の終了が指定した文字列なら true を返す。
 MY_HEAP MyString* my_string_new();  // 文字列オブジェクトを作成する。
 MY_HEAP MyStringArray* my_stringarray_new();  // 文字列配列を作成する。
+void my_stringarray_append(MyStringArray* array, MyString* str);  // 文字列配列オブジェクトに文字列オブジェクトを追加する。
+void my_stringarray_append2(MyStringArray* array, char* s);  // 文字列配列オブジェクトに文字列を追加する。
 MY_HEAP char* my_bytes_new(int size);  // 0 クリアされたバイトバッファを作成する。
 void my_string_times(char* buf, char c, size_t n); // n 個の文字からなる文字列を指定されたバッファにコピーする。
 void my_string_print(MyString* str);  // 文字列オブジェクトを表示する。

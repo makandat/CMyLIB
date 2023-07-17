@@ -30,6 +30,8 @@
 #define MY_WIDE_STRING  32
 #define MY_STRUCT  33
 #define MY_SIZE    34
+#define MY_STRING_OBJECT       50
+#define MY_STRING_ARRAY        51
 
 /* バッファサイズ */
 #define MY_BUFSIZE 1024
