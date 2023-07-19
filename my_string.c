@@ -90,6 +90,8 @@ void my_string_append(MyString* str, const char* s) {
     strcpy(buf, str->data);
     strcat(buf, s);
     str->size = sz - 1;
+    free(str->data);
+    str->data = buf;
     return;
 }
 
@@ -139,8 +141,8 @@ MY_HEAP MyString* my_string_slice(MyString* str, int start, int end) {
     }
     else {
       // ノーマル
-      ret->data = (char*)calloc(end - start + 1, sizeof(char));
-      strncpy(ret->data, str->data + start, end - start);
+      ret->data = (char*)calloc(end - start + 2, sizeof(char));
+      strncpy(ret->data, str->data + start, end - start + 1);
     }
     return ret;
 }
@@ -179,43 +181,97 @@ MY_HEAP MyString* my_string_substring(MyString* str, int start, int length) {
 
 /* 文字列を分割する。 */
 MY_HEAP MyStringArray* my_string_split(MyString* str, char separator) {
-    char* buf[1024];
+    // 空の文字列リストを作成する。
     MyStringArray* ret = my_stringarray_new();
-    char* p = str->data;
+    char* p = str->data;  // 文字列へのポインタ
+    // 文字列の先頭が separator か？
+    MyString* new;
     ret->length = 0;
-    while (strchr(p, separator) != NULL) {
-        MyString* new = my_string_new();
-        new->size = p - str->data;
+    if (p[0] == separator) {
+        p++;
+        ret->length++;
+        // 1個目の文字列として "" を文字列リストに追加
+        new = my_string_new();
+        new->data = (char*)malloc(1);
+        new->data[0] = '\0';
+        new->size = 0;
+        ret->first = new;
+        ret->last  = new;
+        ret->first->next = ret->last;
+    }
+    char* q = p;
+    char* r;
+    // セパレータが残っている間繰り返す。
+    while ((p = strchr(p, separator)) != NULL) {
+        r = p + 1;
+        // 文字列リストに追加する文字列を作る。
+        new = my_string_new();
+        new->size = p - q;  // 追加する文字列の長さ
         new->data = my_bytes_new(new->size + 1);
-        memcpy(buf, str->data, new->size);
+        memcpy(new->data, q, new->size);  // 文字列の内容をコピーする。
         if (ret->first == NULL) {
+            // 1個目の文字列を文字列リストに追加
             ret->first = new;
             ret->last  = new;
             ret->first->next = ret->last;
         }
         else {
+            // 2個目以降の文字列を文字列リストに追加
+            ret->last->next = new;
             ret->last = new;
         }
         ret->length++;
+        p = p + 1;
+        q = p;
     }
+    // 最後の部分文字列
+    // 文字列リストに追加する文字列を作る。
+    new = my_string_new();
+    new->size = strlen(r);  // 追加する文字列の長さ
+    if (new->size == 0) {
+        // separator で文字列が終わっている場合
+        new->data = my_bytes_new(0);
+        new->data[0] = '\0';
+    }
+    else {
+        new->data = my_bytes_new(new->size + 1);
+        memcpy(new->data, r, new->size);  // 文字列の内容をコピーする。
+    }
+    if (ret->first == NULL) {
+        // 1個目の文字列を文字列リストに追加
+        ret->first = new;
+        ret->last  = new;
+        ret->first->next = ret->last;
+    }
+    else {
+        // 2個目以降の文字列を文字列リストに追加
+        ret->last->next = new;
+        ret->last = new;
+    }
+    ret->length++;
     return ret;
 }
 
 /*  文字列を結合する。*/
 MY_HEAP MyString* my_string_join(MyStringArray* strarray, char separator) {
+    char sep[2];
+    sep[0] = separator;
+    sep[1] = '\0';
     MyString* ret = my_string_new();
     size_t n = 0;
     MyString* p = strarray->first;
     while (p != NULL) {
-        n += strlen(p->data);
+        n += strlen(p->data) + 1;
         p = p->next;
     }
     ret->data = (char*)calloc(n + 1, sizeof(char));
     MyString* q = strarray->first;
     while (q != NULL) {
         strcat(ret->data, q->data);
+        strcat(ret->data, sep);
         q = q->next;
     }
+    ret->data[n - 1] = '\0';
     ret->size = n;
     ret->length = 1;
     return ret;
@@ -236,9 +292,9 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
     while (p != NULL) {
         ptr[i] = p;
         i++;
-        p += strlen(target);
+        p = strstr(p + strlen(target), target);
         // もうデータがないかチェックする。
-        if (p > str->data - strlen(target))
+        if (p > str->data + strlen(str->data))
           break;
     }
     // ターゲットの位置をもとにもとの文字列を分解する。
@@ -254,7 +310,7 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
                 strarray->last = strarray->first;
             }
             else { // 元の文字列の先頭以外でターゲットが見つかった場合
-                sz = strlen(ptr[0]) + 1;
+                sz = ptr[0] - str->data + 1;
                 buf = (char*)malloc(sz);
                 strncpy(buf, str->data, sz - 1);
                 strarray->first = my_string_new();
@@ -275,24 +331,26 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
             temp->next = strarray->last;
             strarray->length++;
         }
-        // 文字列のリストを結合して１つの文字列を作る。
-        MyString* p1 = strarray->first;
-        sz = 0;
-        for (int i = 0; i < strarray->length; i++) {  // 結合後の文字列の長さを計算する。
-            sz += strarray->length;
-            sz += strlen(repstr);
-        }
-        // 結合後の文字列用バッファを用意する。
-        buf = my_bytes_new(sz);
-        p1 = strarray->first;
-        // 部分文字列を置換文字列で結合する。
-        for (int i = 0; i < strarray->length; i++) {
-            strcat(buf, p1->data);
-            if (i < strarray->length - 1)
-              strcat(buf, repstr);
-            p1 = p1->next;
-        }
     }
+    // 文字列のリストを結合して１つの文字列を作る。
+    MyString* p1 = strarray->first;
+    sz = 0;
+    for (int i = 0; i < strarray->length; i++) {  // 結合後の文字列の長さを計算する。
+        sz += strlen(p1->data);
+        sz += strlen(repstr);
+        p1 = p1->next;
+    }
+    // 結合後の文字列用バッファを用意する。
+    buf = my_bytes_new(sz);
+    p1 = strarray->first;
+    // 部分文字列を置換文字列で結合する。
+    for (int i = 0; i < strarray->length; i++) {
+        strcat(buf, p1->data);
+        if (i < strarray->length - 1)
+          strcat(buf, repstr);
+        p1 = p1->next;
+    }
+    // 結合後の文字列を返す。
     ret->size = strlen(ret->data) + 1;
     ret->data = buf;
     return ret;
@@ -505,6 +563,27 @@ void my_stringarray_append2(MyStringArray* array, char* s) {
     my_stringarray_append(array, str);
 }
 
+/* 文字列配列オブジェクトの要素を結合した C 文字列を返す。p が NULL でない場合は、文字列 p を挟んで結合する。 */
+MY_HEAP char* my_stringarray_tostr(MyStringArray* array, char* p) {
+    // 結合した場合の文字列長を計算する。
+    int lenp = p == NULL ? 0 : strlen(p);
+    int sz = 0;
+    MyString* q = array->first;
+    for (int i = 0; i < array->length; i++) {
+        sz += strlen(q->data);
+        if (i < array->length - 1)
+            sz += lenp;
+    }
+    char* buf = (char*)calloc(sz + 1, 1);
+    MyString* r = array->first;
+    for (int i = 0; i < array->length; i++) {
+        strcat(buf, r->data);
+        r = r->next;
+        if (i < array->length - 1 && lenp > 0)
+            strcat(buf, p);
+    }
+    return buf;
+}
 
 /* n 個の文字からなる文字列を指定されたバッファにコピーする。 */
 void my_string_times(char* buf, char c, size_t n) {
