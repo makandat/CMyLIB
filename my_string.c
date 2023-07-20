@@ -286,20 +286,20 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
     MyString* ret = my_string_new();
     MyStringArray* strarray = my_stringarray_new();
     char* p = strstr(str->data, target);
+    char* p0;
     int i = 0;
     char* ptr[100];  // target が見つかった位置
     // ターゲットの位置を見つける。
     while (p != NULL) {
         ptr[i] = p;
         i++;
+        p0 = p;
         p = strstr(p + strlen(target), target);
-        // もうデータがないかチェックする。
-        if (p > str->data + strlen(str->data))
-          break;
     }
+    ptr[i] = p0 + strlen(target);
     // ターゲットの位置をもとにもとの文字列を分解する。
     int n = i;  // もとの文字列に含まれるターゲットに数
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i <= n; i++) {
         // １個目の場合
         if (strarray->first == NULL) {
             if (ptr[0] == str->data) {
@@ -323,6 +323,8 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
         else {  // ２個目以降
             p = ptr[i - 1] + strlen(target);  // 中間文字列の位置
             sz = ptr[i] - p;  // 中間文字列の長さ
+            if (i == n)
+                sz = strlen(p);
             buf = (char*)malloc(sz + 1);
             strncpy(buf, p, sz);
             temp = strarray->last;
@@ -341,18 +343,18 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
         p1 = p1->next;
     }
     // 結合後の文字列用バッファを用意する。
-    buf = my_bytes_new(sz);
+    char* buf2 = my_bytes_new(sz + 1);
     p1 = strarray->first;
     // 部分文字列を置換文字列で結合する。
     for (int i = 0; i < strarray->length; i++) {
-        strcat(buf, p1->data);
+        strcat(buf2, p1->data);
         if (i < strarray->length - 1)
-          strcat(buf, repstr);
+          strcat(buf2, repstr);
         p1 = p1->next;
     }
     // 結合後の文字列を返す。
-    ret->size = strlen(ret->data) + 1;
-    ret->data = buf;
+    ret->data = buf2;
+    ret->size = strlen(ret->data);
     return ret;
 }
 
@@ -371,7 +373,7 @@ MY_HEAP MyString* my_string_trim(MyString* str) {
     while (isblank(*q) || *q == '\n') {
         q--;
     }
-    memcpy(ret->data, p, q - p);
+    memcpy(ret->data, p, q - p + 1);
     return ret;
 }
 
@@ -391,7 +393,7 @@ MY_HEAP MyString* my_string_trim_begin(MyString* str) {
 }
 
 /* 文字列の後の空白文字を削除する。 */
-MY_HEAP MyString* my_string_trim_end(MyString* str, char c, size_t len) {
+MY_HEAP MyString* my_string_trim_end(MyString* str) {
     MyString* ret = my_string_new();
     ret->size = 0;
     ret->length = 1;
@@ -401,22 +403,25 @@ MY_HEAP MyString* my_string_trim_end(MyString* str, char c, size_t len) {
     char* p = str->data + n;
     int i = 0;
     while (i < n) {
-        if (isblank(*p))
+        if (isblank(*p) || *p == '\r' || *p == '\n')
             i++;
         else
             break;
         p--;
     }
-    strncpy(ret->data, str->data, n - i);
+    strncpy(ret->data, str->data, n - i + 1);
     return ret;
 }
 
 /* 文字列の前に指定した文字を追加して指定の長さの文字列にする。 */
 MY_HEAP MyString* my_string_pad_left(MyString* str, char c, size_t len) {
     MyString* ret = my_string_new();
-    ret->size = len;
+    if (strlen(str->data) > len)
+        ret->size = strlen(str->data) + len;
+    else
+        ret->size = len;
     ret->length = str->length;
-    ret->data = (char*)malloc(len + 1);
+    ret->data = (char*)calloc(ret->size + 1, 1);
     int n = len - strlen(str->data);
     int i = 0;
     while (i < n) {
@@ -430,13 +435,17 @@ MY_HEAP MyString* my_string_pad_left(MyString* str, char c, size_t len) {
 /* 文字列の後に指定した文字を追加して指定の長さの文字列にする。 */
 MY_HEAP MyString* my_string_pad_right(MyString* str, char c, size_t len) {
     MyString* ret = my_string_new();
-    ret->size = len;
+    if (str->size > len)
+        ret->size = str->size + len;
+    else
+        ret->size = len;
     ret->length = str->length;
-    ret->data = (char*)malloc(len + 1);
+    ret->data = (char*)calloc(ret->size + 1, 1);
     strcpy(ret->data, str->data);
     int i = strlen(ret->data);
-    while (i < len) {
-        *(ret->data + i) = c;
+    char* p = ret->data;
+    while (i < ret->size) {
+        *(p + i) = c;
         i++;
     }
     return ret;
@@ -449,10 +458,24 @@ MY_HEAP MyString* my_string_chomp(MyString* str) {
     ret->length = str->length;
     ret->data = (char*)malloc(ret->size + 1);
     strcpy(ret->data, str->data);
-    char* p = ret->data + strlen(ret->data - 1);
+    char* p = ret->data + strlen(ret->data) - 1;
     if (*p == '\n')
         *p = 0;
     return ret;
+}
+
+/* カッコで囲まれた文字列の中身を取り出す。 */
+MY_HEAP MyString* my_string_strip(MyString* str, char paren) {
+    MyString* str2 = my_string_dup(str);
+    if (str->size >= 2 && str->data[0] == paren && str->data[str->size - 1] == paren) {
+        int i;
+        for (i = 0; i < str->size - 2; i++) {
+            str2->data[i] = str->data[i + 1];
+        }
+        str2->data[i] = '\0';
+        str2->size -= 2;
+    }
+    return str2;
 }
 
 /* 文字列内の英小文字を大文字に変換する。 */
@@ -511,11 +534,25 @@ bool my_string_startswith(MyString* str, char* s) {
 /* 文字列の終了が指定した文字列なら true を返す。 */
 bool my_string_endswith(MyString* str, char* s) {
     int n = strlen(s);
-    char* p = strstr(str->data, s);
-    if (p == str->data - n)
+    char* p = strrstr(str->data, s);
+    if (p == NULL)
+        return false;
+    if (p == str->data + strlen(str->data) - n)
         return true;
     else
         return false;
+}
+
+char *strrstr(char *haystack, char *needle) {
+    char *p = haystack + strlen(haystack);
+    char *q = needle + strlen(needle);
+    while (haystack <= p && p - haystack >= q - needle) {
+        if (!memcmp(p - q + needle, needle, q - needle)) {
+            return (char *)p - q + needle;
+        }
+        p--;
+    }
+    return NULL;
 }
 
 /* 文字列オブジェクトを作成する。 */
