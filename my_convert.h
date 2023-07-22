@@ -1,7 +1,8 @@
 /* my_convert.h */
-#ifdef MY_CONVERTH
+#ifdef MY_CONVERT_H
 #else
 #include "my_object.h"
+#define MY_CONVERT_H
 
 MY_HEAP int8_t* my_itos(int32_t);  // 整数から文字列に変換する。
 MY_HEAP int8_t* my_ltos(int64_t);  // 長整数から文字列に変換する。

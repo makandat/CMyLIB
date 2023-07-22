@@ -21,6 +21,7 @@ void my_release_str(MyString* str) {
         str->length = 0;
         free(str->data);
         str->data = NULL;
+        str->refcount--;
         free(str);
     }
 }
@@ -41,6 +42,7 @@ void my_release_strarray(MyStringArray* strarray) {
         }
         strarray->first = NULL;
         strarray->last = NULL;
+        strarray->refcount--;
         free(strarray);
     }
 }

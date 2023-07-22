@@ -1,4 +1,6 @@
 /* my_string.h */
+#ifndef MY_STRING_H
+#define MY_STRING_H
 #include "my_object.h"
 #include <ctype.h>
 
@@ -61,3 +63,5 @@ void my_string_times(char* buf, char c, size_t n); // n 個の文字からなる
 void my_string_print(MyString* str);  // 文字列オブジェクトを表示する。
 void my_stringarray_print(MyStringArray* array);  // 文字列配列オブジェクトを表示する。
 char *strrstr(char *haystack, char *needle);  // strstr()関数の後ろから検索バージョン
+
+#endif
