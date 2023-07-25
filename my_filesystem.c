@@ -1,5 +1,6 @@
 /* my_filesystem.c */
 #include "my_filesystem.h"
+#pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
 
 // ファイル属性
 /* ファイルまたはディレクトリが存在し、かつアクセスできるかチェックする。*/
@@ -139,12 +140,12 @@ MY_HEAP const char* my_home() {
 // パス
 /* ファイル拡張子を得る。 */
 MY_HEAP const char* my_file_ext(const char* path) {
-  int8_t* p1 = strrchr(path, '.');
-  int8_t* p2 = strrchr(path, '/');
-  int8_t* ext = (int8_t*)calloc(MAX_EXTLEN + 1, sizeof(int8_t));
+  char* p1 = strrchr(path, '.');
+  char* p2 = strrchr(path, '/');
+  char* ext = (char*)calloc(MAX_EXTLEN + 1, sizeof(char));
   if (p1 == NULL)
-    return emptystring;
-  int8_t* p = p1;
+    return (char*)calloc(1, sizeof(char));
+  char* p = p1;
   if (p2 == NULL || (int64_t)p2 < (int64_t)p1) {
     for (int i = 0; i < MAX_EXTLEN; i++) {
       if (*p == 0)
@@ -157,11 +158,11 @@ MY_HEAP const char* my_file_ext(const char* path) {
 
 /* パスのディレクトリ部分を得る */
 MY_HEAP const char* my_file_dir(const char* path) {
-  int8_t* p1 = strrchr(path, '/');
+  char* p1 = strrchr(path, '/');
   if (p1 == NULL || (int64_t)p1 == (int64_t)path)
-    return emptystring;
+    return (char*)calloc(1, sizeof(char));
   int64_t n = (int64_t)p1 - (int64_t)path;
-  int8_t* dir = (int8_t*)calloc(n + 1, sizeof(int8_t));
+  char* dir = (char*)calloc(n + 1, sizeof(char));
   strncpy(dir, path, n);
   return dir;
 }
@@ -169,23 +170,20 @@ MY_HEAP const char* my_file_dir(const char* path) {
 
 /* パスのファイル名部分を得る。*/
 MY_HEAP const char* my_file_filename(const char* path) {
-  int8_t* p1 = strrchr(path, '/');
+  char* p1 = strrchr(path, '/');
   if (p1 == NULL || (int64_t)p1 == (int64_t)path)
     return path;
   int64_t n = (int64_t)strlen(path) - ((int64_t)p1 - (int64_t)path);
-  int8_t* filename = (int8_t*)calloc(n + 1, sizeof(int8_t));
+  char* filename = (char*)calloc(n + 1, sizeof(char));
   strncpy(filename, p1 + 1, n);
   return filename;
 }
 
 /* パスに文字列を追加する。 */
 MY_HEAP const char* my_file_append(const char* path, const char* p) {
-  int8_t sep[2];
-  sep[0] = separator;
-  sep[1] = '\0';
-  int8_t* newpath = (int8_t*)malloc(strlen(dir) + strlen(p) + 2);
-  strcpy(newpath, dir);
-  strcat(newpath, sep);
+  char* newpath = (char*)malloc(strlen(path) + strlen(p) + 2);
+  strcpy(newpath, path);
+  strcat(newpath, "/");
   strcat(newpath, p);
   return newpath;
 }
@@ -195,7 +193,7 @@ MY_HEAP const char* my_file_absolute(const char* relpath) {
   char abspath[512];
   realpath(relpath, abspath);
   size_t size = strlen(abspath) + 1;
-  int8_t* result = (int8_t*)malloc(size);
+  char* result = (char*)malloc(size);
   strcpy(result, abspath);
   return result;
 }
@@ -203,11 +201,9 @@ MY_HEAP const char* my_file_absolute(const char* relpath) {
 // ファイル入出力
 /* ファイルを読んでバッファを返す。 */
 MY_HEAP char* my_file_read(const char* path, size_t maxsize) {
-  char* buff = (char*)malloc(maxsize);
-  memset(buff, 0, sizeof(buff));
-  const char* path = argv[1];
+  char* buff = (char*)calloc(maxsize, 1);
   int fd = open(path, O_RDONLY);  // 読み込み専用で開く。
-  ssize_t size = read(fd, buff, sizeof(buff));  // 最大バッファサイズまで読み込む。
+  read(fd, buff, maxsize - 1);  // 最大バッファサイズまで読み込む。
   char* p = strchr(buff, 255);  // ファイル全体でなく途中まで読み込んだ場合は終端が 255 になる。
   if (p != NULL)  // 255 があった場合、改行に置き換える。
     *p = '\n';
@@ -221,7 +217,7 @@ ssize_t my_file_write(const char* path, char* buf) {
   if (access(path, F_OK) == 0)  // 書き込むファイルが存在するか？
     flags = O_WRONLY; // 存在する場合、O_CREAT は不要。
   int fd = open(path, flags, 0744);  // 書き込み専用で開く。
-  ssize_t size = write(fd, buff, strlen(buff));  // buff 内容を書く。
+  ssize_t size = write(fd, buf, strlen(buf));  // buff 内容を書く。
   close(fd);
   return size;
 }
@@ -287,7 +283,7 @@ void my_dir_recursive(DirentList* entlist, const char* directory) {
 }
 
 /* ディレクトリ・エントリリストに指定したエントリを追加する。*/
-bool dir_append(DirentList* entries, struct dirent* ent, struct stat* status, char* fullpath) {
+bool my_dir_append(DirentList* entries, struct dirent* ent, struct stat* status, char* fullpath) {
   DirEntryCell* cell = (DirEntryCell*)malloc(sizeof(DirEntryCell));
   cell->stat = (struct stat*)malloc(sizeof(struct stat));
   memcpy(cell->stat, status, sizeof(struct stat));
@@ -313,7 +309,7 @@ bool dir_append(DirentList* entries, struct dirent* ent, struct stat* status, ch
 }
 
 /* 取得済みのディレクトリの全エントリに対して関数 callback を適用する。*/
-void dir_foreach(DirentList* entlist, void (*callback)(struct dirent* entry)) {
+void my_dir_foreach(DirentList* entlist, void (*callback)(struct dirent* entry)) {
   DirEntryCell* cell = entlist->first;
   while (cell != NULL) {
     callback(&(cell->dir_entry));
@@ -322,7 +318,7 @@ void dir_foreach(DirentList* entlist, void (*callback)(struct dirent* entry)) {
 }
 
 /* リストを配列に変換する。*/
-void dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
+void my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
   DirEntryCell* cell = entlist->first;
   for (int i = 0; i < size; i++)
     entries[i] = NULL;
@@ -341,49 +337,75 @@ void dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
 
 // ファイル操作
 /* ファイルやディレクトリを移動する。(リネームする) */
-bool my_move(const char* src, const char* dest) {
-  return false;
+bool my_move(const char* srcpath, const char* destpath) {
+  return rename(srcpath, destpath) == 0 ? true :false;
 }
 
 /* ファイルをコピーする。 */
-bool my_copy(const char* src, const char* dest) {
-  return false;
-
+bool my_copy(const char* srcpath, const char* destpath, bool overwrite) {
+  if (! overwrite) {
+    struct stat status;
+    if (stat(destpath, &status) < 0)
+      return false;
+  }
+  FILE* fp0 = fopen(destpath, "wb");
+  if (fp0 == NULL)
+    return false;
+  FILE* fp1 = fopen(srcpath, "rb");
+  if (fp1 == NULL)
+    return false;
+  int c = 0;
+  while ((c = fgetc(fp1)) != EOF) {
+    fputc(c, fp0);
+  }
+  fclose(fp0);
+  fclose(fp1);
+  return true;
 }
 
 /* ファイルを削除する。 */
-bool my_delete(const char* src, bool force) {
-  return false;
-
+bool my_delete(const char* path) {
+  return remove(path) == 0 ? true : false;
 }
 
 /* ファイルモードを変更する。 */
 bool my_chmod(const char* path, int mode) {
-  return false;
-
+  return chmod(path, mode) < 0 ? false : true;
 }
 
 // ディレクトリ操作
 /* ディレクトリを作成する。*/
 bool my_mkdir(const char* dir) {
-  return false;
-
+  return mkdir(dir, 0755) < 0 ? false : true;
 }
 
 /* 空のディレクトリを削除する。 */
 bool my_rmdir(const char* dir) {
-  return false;
+  return rmdir(dir) < 0 ? false : true;
+}
 
+/* カレントディレクトリを変更する。 */
+bool my_chdir(const char* dir) {
+  return chdir(dir) < 0 ? false : true;
 }
 
 // 一時ファイル
 /* バッファ内容を一時ファイルに書く。 */
 FILE* my_write_temp(char* buf) {
-  return NULL;
+  FILE* fp = tmpfile();
+  if (fp == NULL)
+    return NULL;
+  fputs(buf, fp);
+  return fp;
 }
 
 /* 一時ファイルの内容を読む。*/
-bool my_read_temp(FILE* fp, char* buf, bool close) {
-  return false;
-
+bool my_read_temp(FILE* fp, char* buf, size_t size, bool close) {
+  if (fseek(fp, 0L, SEEK_SET) != 0)
+    return false;
+  if (fgets(buf, size, fp) == NULL)
+    return false;
+  if (close)
+    fclose(fp);
+  return true;
 }

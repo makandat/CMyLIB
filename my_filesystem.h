@@ -1,6 +1,7 @@
 /* my_filesystem.h */
 #ifndef MY_FILESYSTEM_H
 #define MY_FILESYSTEM_H
+
 #include "my_string.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -9,11 +10,17 @@
 #include <grp.h>
 #include <pwd.h>
 #include <unistd.h>
-#define _POSIX1_SOURCE 2
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <locale.h>
+#include <dirent.h>
+
+#define MAX_PATH 512
+#define MAX_EXTLEN 10
+
+char *realpath(const char *__restrict__file_name, char *__restrict__resolved_name);
+int lstat(const char *__restrict__ pathname, struct stat *__restrict__ buf);
 
 /* ディレクトリエントリのセル */
 typedef struct tagDirEntryCell {
@@ -68,16 +75,17 @@ void my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size); 
 
 // ファイル操作
 bool my_move(const char* src, const char* dest);  // ファイルやディレクトリを移動する。(リネームする)
-bool my_copy(const char* src, const char* dest);  // ファイルをコピーする。
-bool my_delete(const char* src, bool force);      // ファイルを削除する。
+bool my_copy(const char* src, const char* dest, bool overwrite);  // ファイルをコピーする。
+bool my_delete(const char* src);      // ファイルを削除する。
 bool my_chmod(const char* path, int mode);  // ファイルモードを変更する。
 
 // ディレクトリ操作
-bool my_mkdir(const char* dir);
-bool my_rmdir(const char* dir);
+bool my_mkdir(const char* dir);  // ディレクトリを作成する。
+bool my_rmdir(const char* dir);  // 空のディレクトリを削除する。
+bool my_chdir(const char* dir);  // カレントディレクトリを変更する。
 
 // 一時ファイル
-FILE* my_write_temp(char* buf);
-bool my_read_temp(FILE* fp, char* buf, bool close);
+FILE* my_write_temp(char* buf);  // 一時ファイルに書き込む。
+bool my_read_temp(FILE* fp, char* buf, size_t size, bool close); // 一時ファイルから読む。
 
 #endif
