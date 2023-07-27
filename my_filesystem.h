@@ -36,6 +36,15 @@ typedef struct tagDirentList {
   int count;  // リストに含まれるエントリの数
 } DirentList;
 
+/*
+struct dirent {
+        __uint32_t d_fileno;            // エントリのファイル番号
+        __uint16_t d_reclen;            // このレコードの長さ
+        __uint8_t  d_type;              // ファイルタイプ、以下参照
+        __uint8_t  d_namlen;            // d_name の文字列長
+        char    d_name[255 + 1];        // 名前はこの長さを越えてはならない
+} */
+
 // ファイル属性
 bool my_exists(const char* path);  // ファイルまたはディレクトリが存在するかチェックする。
 bool my_isfile(const char* path);  // ファイルが存在するかチェックする。
@@ -67,14 +76,14 @@ MY_HEAP char* my_file_read(const char* path, size_t maxsize);  // ファイル�
 ssize_t my_file_write(const char* path, char* buf);  // ファイルにバッファ内容を書く。
 
 // ディレクトリの内容一覧
-void my_dir_entries(DirentList* entlist, const char* directory);  // ディレクトリ内容を文字列配列として返す。
-void my_dir_recursive(DirentList* entlist, const char* directory);  // ディレクトリを再帰的に検索して内容を文字列配列として返す。
+void my_dir_entries(DirentList* entlist, const char* directory);  // ディレクトリ内容を返す。
+void my_dir_recursive(DirentList* entlist, const char* directory);  // ディレクトリを再帰的に検索して内容を返す。
 bool my_dir_append(DirentList* entries, struct dirent* ent, struct stat* status, char* fullpath);  // (ワーク用) ディレクトリ・エントリリストに指定したエントリを追加する。
 void my_dir_foreach(DirentList* entlist, void (*callback)(struct dirent* entry));  // 取得済みのディレクトリの全エントリに対して関数 callback を適用する。
-void my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size);  // リストを配列に変換する。
+int my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size);  // リストを配列に変換する。
 
 // ファイル操作
-bool my_move(const char* src, const char* dest);  // ファイルやディレクトリを移動する。(リネームする)
+bool my_rename(const char* src, const char* dest);  // ファイルやディレクトリをリネームする。
 bool my_copy(const char* src, const char* dest, bool overwrite);  // ファイルをコピーする。
 bool my_delete(const char* src);      // ファイルを削除する。
 bool my_chmod(const char* path, int mode);  // ファイルモードを変更する。

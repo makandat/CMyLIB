@@ -33,13 +33,13 @@ void my_list_free(ListRoot* list) {
 }
 
 /* ListRoot.current を先頭のセルにする。 */
-MY_HEAP const ListCell* my_list_first(ListRoot* list) {
+const ListCell* my_list_first(ListRoot* list) {
     list->current = list->first;
     return list->current;
 }
 
 /* ListRoot.current を次のセルにする。 */
-MY_HEAP const ListCell* my_list_next(ListRoot* list) {
+const ListCell* my_list_next(ListRoot* list) {
     if (list->current == NULL)
         return NULL;
     ListCell* cell = list->current;

@@ -29,8 +29,8 @@ typedef struct tagListRoot {
 /* 関数のプロトタイプ */
 MY_HEAP ListRoot* my_list_new();  // ListRoot を初期化する。
 void my_list_free(ListRoot*); // すべてのリソースを解放する。
-MY_HEAP const ListCell* my_list_first(ListRoot* root);  // ListRoot.current を先頭のセルにする。
-MY_HEAP const ListCell* my_list_next(ListRoot* root);  // ListRoot.current を次のセルにする。
+const ListCell* my_list_first(ListRoot* root);  // ListRoot.current を先頭のセルにする。
+const ListCell* my_list_next(ListRoot* root);  // ListRoot.current を次のセルにする。
 void my_list_append(ListRoot* root, void* value, size_t size);  // ペイロードを追加する。
 void my_list_value(ListRoot* root, void* pval);  // 現在の値を得る。(pvalの領域は呼び出し側で用意すること)
 void my_list_foreach(ListRoot*, Callback); // コールバック関数にリストのすべての要素を適用する。

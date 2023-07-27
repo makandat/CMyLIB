@@ -203,6 +203,8 @@ MY_HEAP const char* my_file_absolute(const char* relpath) {
 MY_HEAP char* my_file_read(const char* path, size_t maxsize) {
   char* buff = (char*)calloc(maxsize, 1);
   int fd = open(path, O_RDONLY);  // 読み込み専用で開く。
+  if (fd < 0)
+    return NULL;
   read(fd, buff, maxsize - 1);  // 最大バッファサイズまで読み込む。
   char* p = strchr(buff, 255);  // ファイル全体でなく途中まで読み込んだ場合は終端が 255 になる。
   if (p != NULL)  // 255 があった場合、改行に置き換える。
@@ -312,20 +314,20 @@ bool my_dir_append(DirentList* entries, struct dirent* ent, struct stat* status,
 void my_dir_foreach(DirentList* entlist, void (*callback)(struct dirent* entry)) {
   DirEntryCell* cell = entlist->first;
   while (cell != NULL) {
-    callback(&(cell->dir_entry));
+    callback(cell->dir_entry);
     cell = cell->next;
   }
 }
 
 /* リストを配列に変換する。*/
-void my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
+int my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
   DirEntryCell* cell = entlist->first;
   for (int i = 0; i < size; i++)
     entries[i] = NULL;
   int i = 0;
   while (cell != NULL) {
     if (i < size) {
-      entries[i] = cell->dir_entry;
+      entries[i] = &(cell->dir_entry);
       cell = cell->next;
       i++;
     }
@@ -333,12 +335,13 @@ void my_dir_toarray(DirentList* entlist, DirEntryCell* entries[], size_t size) {
       break;
     }
   }
+  return i;
 }
 
 // ファイル操作
-/* ファイルやディレクトリを移動する。(リネームする) */
-bool my_move(const char* srcpath, const char* destpath) {
-  return rename(srcpath, destpath) == 0 ? true :false;
+/* ファイルやディレクトリをリネームする。 */
+bool my_rename(const char* oldname, const char* newname) {
+  return rename(oldname, newname) == 0 ? true :false;
 }
 
 /* ファイルをコピーする。 */
