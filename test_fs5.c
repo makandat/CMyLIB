@@ -1,8 +1,8 @@
 /* test_fs5.c */
 #include "cmylib.h"
 
-#define SRC "/home/makandat/.bashrc"
-#define DST "/home/makandat/temp/bashrc"
+#define SRC "/home/user/.bashrc"
+#define DST "/home/user/temp/bashrc"
 
 /* main */
 int main(int argc, char* argv[]) {
@@ -18,7 +18,7 @@ int main(int argc, char* argv[]) {
     b = my_copy(SRC, DST, true);
     break;
   case 2: // rename, chdir
-    my_chdir("/home/makandat/temp");
+    my_chdir("/home/user/temp");
     b = my_rename("bashrc", "moved");
     break;
 
@@ -31,11 +31,11 @@ int main(int argc, char* argv[]) {
     break;
   
   case 5: // mkdir
-    b = my_mkdir("/home/makandat/temp/0");
+    b = my_mkdir("/home/user/temp/0");
     break;
     
   case 6: // rmdir
-    b = my_rmdir("/home/makandat/temp/0");
+    b = my_rmdir("/home/user/temp/0");
     break;
     
   case 7: { // write_temp, read_temp

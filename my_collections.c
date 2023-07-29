@@ -95,7 +95,16 @@ MY_HEAP IxRoot* my_ixlist_new() {
     root->last = NULL;
     root->index = 0;
     root->count = 0;
-    return NULL;
+    return root;
+}
+
+/* リストにペイロードを追加する。*/
+void my_ixlist_setval(IxRoot* root, void* value, size_t size) {
+    IxCell* cell = (IxCell*)malloc(sizeof(IxCell));
+    cell->payload = malloc(size);
+    memcpy(cell->payload, value, size);
+    cell->size = size;
+    my_ixlist_append(root, cell);
 }
 
 /* リストにセルを追加する。 */
@@ -165,8 +174,9 @@ void my_ixlist_append(IxRoot* root, IxCell* cell) {
   }
 }
 
+
 /* インデックスに対応するセルを得る。 */
-MY_HEAP IndexCell* my_ixlist_get_indexcell(IxRoot* list, int idx) {
+IndexCell* my_ixlist_get_indexcell(IxRoot* list, int idx) {
     int indexof = idx % INDEX_CELLGROUP; // インデックスグループ内の位置
     int indexn = (int)(idx / INDEX_CELLGROUP);  // インデックスグループ番号
     // インデックスグループへのポインタを得る。
@@ -179,8 +189,26 @@ MY_HEAP IndexCell* my_ixlist_get_indexcell(IxRoot* list, int idx) {
     return ixc;
 }
 
+/* インデックスに対応するペイロードを得る。 */
+void* my_ixlist_getval(IxRoot* list, int idx) {
+    IndexCell* ixcell = my_ixlist_get_indexcell(list, idx);
+    return ixcell->cell->payload;
+}
+
+/* リストセルの先頭を返す。*/
+IxCell* my_ixlist_first(IxRoot* list) {
+    list->current = list->first;
+    return list->current;
+}
+
+/* 次のリストセルを返す。*/
+IxCell* my_ixlist_next(IxRoot* list) {
+    list->current = list->current->next;
+    return list->current;
+}
+
 /* 要素の数を得る。*/
-int my_ixlist_get_count(IxRoot* list) {
+int my_ixlist_count(IxRoot* list) {
     return list->count;
 }
 
@@ -189,7 +217,7 @@ int my_ixlist_get_count(IxRoot* list) {
 void my_ixlist_foreach(IxRoot* list, Callback func) {
     IxCell* p = list->first;
     while (p != NULL) {
-        func(p->payload, 0);
+        func(p->payload, p->size);
         p = p->next;
     }
 }
@@ -225,11 +253,14 @@ void my_ixlist_dump_indexes(IxRoot* root) {
     辞書
 */
 
-/* 辞書を作成する。 */
-MY_HEAP DictEntry* my_dict_new() {
-    DictEntry* hashtable = (DictEntry*)malloc(DICT_ENTRY * sizeof(DictEntry));
-    memset(hashtable, 0, DICT_ENTRY * sizeof(DictEntry));
-    return hashtable;
+/* 辞書のを作成する。 */
+MY_HEAP DictEntry** my_dict_new() {
+    DictEntry** dict = malloc(sizeof(void*) * DICT_ENTRY);
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        dict[i] = (DictEntry*)malloc(sizeof(DictEntry));
+        memset(dict[i], 0, sizeof(DictEntry));
+    }
+    return dict;
 }
 
 /* キーに対するハッシュ値を得る。 */
@@ -246,12 +277,8 @@ int my_gethash(const char* key) {
 }
 
 /* キーに対する値を更新する。 */
-void my_set_dictcell(DictEntry* dict, const char* key, void* value, size_t size) {
-#ifdef _DEBUG
-  int hash = my_get_dicthash(key);
-  printf("%s:%d¥n", key, hash);
-#endif
-  DictEntry* entry = my_get_hashentry(dict, key);
+void my_dict_setval(DictEntry** dict, const char* key, void* value, size_t size) {
+  DictEntry* entry = my_getentry(dict, key);
   if (entry->first == NULL) {
     // セルがないので追加
     DictCell* cell = my_dictcell_new(key, value, size);
@@ -262,7 +289,7 @@ void my_set_dictcell(DictEntry* dict, const char* key, void* value, size_t size)
     // 同じキーのセルがあるか
     if (my_dictkey_exists(dict, key)) {
       // 同じキーのセルがある場合はセル上書き
-      DictCell* cell = my_get_dictcell(entry, key);
+      DictCell* cell = my_get_dictcell(dict, key);
       // そのセルを上書きする。
       memcpy(cell->payload, value, size);
       cell->size = size;
@@ -283,43 +310,193 @@ void my_set_dictcell(DictEntry* dict, const char* key, void* value, size_t size)
 }
 
 /* キーに対するエントリ―を得る。 */
-MY_HEAP DictEntry* my_get_hashentry(DictEntry* dict, const char* key) {
-    return NULL;
+MY_HEAP DictEntry* my_getentry(DictEntry** dict, const char* key) {
+    int hash = my_gethash(key);
+    return dict[hash];
 }
 
 /* セルを作成する。 */
 MY_HEAP DictCell* my_dictcell_new(const char* key, void* value, size_t size) {
-    return NULL;
+    DictCell* cell = (DictCell*)malloc(sizeof(DictCell));
+    if (cell == NULL)
+        return NULL;
+    int keyleng = (int)strlen(key) + 1;
+    cell->key = (char*)malloc(keyleng);
+    if (cell->key == NULL)
+      return NULL;
+    strcpy(cell->key, key);
+    cell->payload = value;
+    cell->size = size;
+    cell->next = NULL;
+    return cell;
 }
 
 /* キーが存在するかチェックする。 */
-bool my_dictkey_exists(DictEntry* dict, const char* key) {
-    return false;
+bool my_dictkey_exists(DictEntry* dict[], const char* key) {
+    int hash = my_gethash(key);
+    if (dict[hash]->count > 0) {
+        if (strcmp(dict[hash]->first->key, key) == 0)
+          return true;
+        else {
+           DictCell* p = dict[hash]->first->next;
+           while (p != NULL) {
+              if (strcmp(p->key, key) == 0)
+                return true;
+              else
+                p = p->next;
+          }
+          return false;
+        }
+    }
+    else
+        return false;
 }
 
 /* キー一覧を得る。 */
-MY_HEAP ListRoot* my_get_keys(DictEntry* dict) {
-    return NULL;
+MY_HEAP ListRoot* my_get_keys(DictEntry** dict) {
+  ListRoot* keys = my_list_new();
+  DictCell* cell = NULL;
+  for (int i = 0; i < DICT_ENTRY; i++) {
+    DictEntry* entry = dict[i];
+    for (int i = 0; i < entry->count; i++) {
+      if (i == 0) {
+        cell = entry->first;
+      }
+      else {
+        if (cell != NULL)
+          cell = cell->next;
+      }
+      my_list_append(keys, cell->key, strlen(cell->key) + 1);
+    }
+  }
+  return keys;
+}
+
+/* コールバック関数に辞書の全キー値ペアを適用する。 */
+void my_dict_foreach(DictEntry** dict, EachPair func) {
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        if (dict[i] == NULL)
+            continue; 
+        if (dict[i]->count == 1) {
+            func(dict[i]->first->key, dict[i]->first->payload, dict[i]->first->size);
+        }
+        else {
+            DictCell* cell = dict[i]->first;
+            while (cell != NULL) {
+                 func(cell->key, cell->payload, cell->size);
+                 cell = cell->next;
+            }
+        }
+    }
 }
 
 /* 指定したキーのセルを得る。 */
-MY_HEAP DictCell* my_get_dictcell(DictEntry* entry, const char* key) {
-    return NULL;
+MY_HEAP DictCell* my_get_dictcell(DictEntry** dict, const char* key) {
+    DictCell* cell = NULL;
+    int hash = my_gethash(key);
+    if (dict[hash]->count == 0)
+        return NULL;
+    else if (dict[hash]->count == 1)
+        return dict[hash]->first;
+    else {
+        cell = dict[hash]->first;
+        while (cell->next != NULL) {
+            if (strcmp(cell->key, key) == 0) {
+                return cell;
+            }
+            cell = cell->next;
+        }
+        return NULL;
+    }
+    return cell;
+}
+
+/* 指定したキーに対する値を得る。 */
+void* my_dict_getval(DictEntry** dict, const char* key) {
+    DictCell* cell = my_get_dictcell(dict, key);
+    if (cell == NULL)
+        return NULL;
+    return cell->payload;
+}
+
+/* 指定したキーに対するサイズを得る。 */
+size_t my_dict_getsize(DictEntry** dict, const char* key) {
+    DictCell* cell = my_get_dictcell(dict, key);
+    return cell->size;
 }
 
 /* 辞書のリソースを解放する。 */
-void my_dict_free(DictEntry* dict, bool b) {
+void my_dict_free(DictEntry** dict, bool b) {
 
 }
 
 /* キーを削除する。 */
-void my_dict_removeitem(DictEntry* dict, const char* key) {
-
+void my_dict_remove(DictEntry** dict, const char* key) {
+  DictEntry* entry = my_getentry(dict, key);
+  if (entry->count == 0) {
+    // キーに対するデータが存在しない場合
+    return;
+  }
+  if (entry->count == 1) {
+    // エントリに対しセルが1つだけの場合
+    free(entry->first->payload);
+    entry->count = 0;
+    entry->first = NULL;
+  }
+  else {
+    // エントリに対しセルが2つ以上の場合
+    DictCell* cell = entry->first;
+    DictCell* prev = NULL;
+    while (true) {
+      if (strcmp(cell->key, key) == 0) {
+        if (prev == NULL) {
+          // エントリ最初のセルの場合
+          entry->first = cell->next;
+          entry->count--;
+          //free(cell->value);
+        }
+        else {
+          // エントリ途中または最後のセルの場合
+          prev->next = cell->next;
+          entry->count--;
+          //free(cell->value);
+        }
+        break;
+      }
+      else if (cell->next == NULL) {
+        break;
+      }
+      else {
+        prev = cell;
+        cell = cell->next;
+      }
+    }
+  }
 }
 
 /* 辞書をダンプ表示する。 */
-void my_dump_hashtable(DictEntry* hashtable, bool all) {
-
+void my_dump_hashtable(DictEntry** hashtable, bool all) {
+  DictCell* cell = NULL;
+  for (int i = 0; i < DICT_ENTRY; i++) {
+    DictEntry* entry = hashtable[i];
+    if (entry->count > 0) {
+      printf("Entry[%d] .count = %d\n", i, entry->count);
+      for (int i = 0; i < entry->count; i++) {
+        if (i == 0) {
+          cell = entry->first;
+        }
+        else {
+          if (cell != NULL)
+            cell = cell->next;
+        }
+      }
+    }
+    else {
+      if (all) {
+        printf("Entry[%d] NULL¥n", i);
+      }
+    }
+  }
 }
 
 /*

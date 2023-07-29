@@ -4,9 +4,12 @@
 #include "my_object.h"
 
 #define INDEX_CELLGROUP 1024
+#define DICT_ENTRY 4096
 
 // foreach コールバック関数
-typedef void (*Callback)(void*, size_t);
+typedef void (*Callback)(void* payload, size_t plsize);
+// 辞書のコールバック関数
+typedef void (*EachPair)(char* key, void* value, size_t sz);
 
 /*
   単純な一方向リスト
@@ -47,8 +50,9 @@ typedef struct tagIxListCell {
 
 /* ルートの定義 */
 typedef struct tagIxListRoot {
-  struct tagIxListRoot* first;  // 先頭のセル
-  struct tagIxListRoot* last;  // 最後のセル
+  IxCell* first;  // 先頭のセル
+  IxCell* last;  // 最後のセル
+  IxCell* current;  // 現在のセル
   struct tagIndexList* index;  // インデックス
   int count;  // セルの数
 } IxRoot;
@@ -56,21 +60,25 @@ typedef struct tagIxListRoot {
 /* インデックスリストのセル */
 typedef struct tagIndexCell {
   int code;  // インデックスの値
-  struct tagIxListCell* cell;  // セルへのポインタ
+  IxCell* cell;  // セルへのポインタ
 } IndexCell;
 
 /* インデックスリスト */
 typedef struct tagIndexList {
-  struct tagIndexCell* indexes[INDEX_CELLGROUP];  // インデックスの配列
+  IndexCell* indexes[INDEX_CELLGROUP];  // インデックスの配列
   struct tagIndexList* next;  // 次のインデックスリストへのポインタ
 } IndexList;
 
 
 /* 関数定義 */
 MY_HEAP IxRoot* my_ixlist_new(); // リストを初期化する。
+void my_ixlist_setval(IxRoot* root, void* value, size_t size);  // リストにペイロードを追加する。
 void my_ixlist_append(IxRoot*, IxCell*);  // リストにセルを追加する。
-MY_HEAP IndexCell* my_ixlist_get_indexcell(IxRoot*, int);  // インデックスに対応するセルを得る。
-int my_ixlist_get_count(IxRoot*);  // 要素の数を得る。
+void* my_ixlist_getval(IxRoot*, int);  // インデックスに対応するペイロードを得る。
+IndexCell* my_ixlist_get_indexcell(IxRoot*, int);  // インデックスに対応するセルを得る。
+IxCell* my_ixlist_first(IxRoot* list);  // リストセルの先頭を返す。
+IxCell* my_ixlist_next(IxRoot* list);  // 次のリストセルを返す。
+int my_ixlist_count(IxRoot*);  // 要素の数を得る。
 void my_ixlist_foreach(IxRoot*, Callback);  // リスト内のすべての要素（値）に関数を適用する。
 void my_ixlist_free(IxRoot*);  // リストを解放する。
 void my_ixlist_dump_indexes(IxRoot*);  // インデックスリストをダンプ表示する。
@@ -78,7 +86,6 @@ void my_ixlist_dump_indexes(IxRoot*);  // インデックスリストをダン�
 /*
     辞書
 */
-#define DICT_ENTRY 4096
 
 /* セル */
 typedef struct tagDictCell {
@@ -95,17 +102,20 @@ typedef struct tagDictEntry {
 } DictEntry;
 
 /* 関数のプロトタイプ */
-MY_HEAP DictEntry* my_dict_new();  // 辞書を作成する。
+MY_HEAP DictEntry** my_dict_new();  // 辞書を作成する。
 int my_gethash(const char* key);  // キーに対するハッシュ値を得る。
-void my_set_dictcell(DictEntry* dict, const char* key, void* value, size_t size);  // キーに対する値を更新する。(キーが存在しないときは追加)
-MY_HEAP DictEntry* my_get_hashentry(DictEntry* dict, const char* key);  // キーに対するエントリ―を得る。
+MY_HEAP DictEntry* my_getentry(DictEntry** dict, const char* key);  // キーに対するエントリ―を得る。
 MY_HEAP DictCell* my_dictcell_new(const char* key, void* value, size_t size);  // セルを作成する。
-bool my_dictkey_exists(DictEntry* dict, const char* key);  // キーが存在するかチェックする。
-MY_HEAP ListRoot* my_get_keys(DictEntry* dict);  // キー一覧を得る。
-MY_HEAP DictCell* my_get_dictcell(DictEntry* entry, const char* key);  // 指定したキーのセルを得る。
-void my_dict_free(DictEntry* dict, bool);  // 辞書のリソースを解放する。
-void my_dict_removeitem(DictEntry* dict, const char* key);  // キーを削除する。
-void my_dump_hashtable(DictEntry* hashtable, bool all);  // 辞書をダンプ表示する。
+bool my_dictkey_exists(DictEntry** dict, const char* key);  // キーが存在するかチェックする。
+MY_HEAP ListRoot* my_get_keys(DictEntry** dict);  // キー一覧を得る。
+void my_dict_foreach(DictEntry** dict, EachPair f);  // 辞書のすべてのキー値ペアに対して関数を適用する。
+MY_HEAP DictCell* my_get_dictcell(DictEntry** entry, const char* key);  // 指定したキーのセルを得る。
+void my_dict_setval(DictEntry** dict, const char* key, void* value, size_t size);  // キーに対する値を更新する。(キーが存在しないときは追加)
+void* my_dict_getval(DictEntry** dict, const char* key);  // キーに対する値を得る。
+size_t my_dict_getsize(DictEntry** dict, const char* key);  // 指定したキーに対するペイロードのサイズを得る。
+void my_dict_free(DictEntry** dict, bool);  // 辞書のリソースを解放する。
+void my_dict_remove(DictEntry** dict, const char* key);  // キーを削除する。
+void my_dump_hashtable(DictEntry** dict, bool all);  // 辞書をダンプ表示する。
 
 /*
  *   Stack
