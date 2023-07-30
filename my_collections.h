@@ -141,8 +141,8 @@ typedef struct tagStackRoot {
 /* スタック関数 */
 MY_HEAP StackRoot* my_stack_new();  // スタックを作成する。
 void my_stack_push(StackRoot* stack, void* value, size_t size);  // 値をプッシュする。
-bool my_stack_pop(StackRoot* stack, void* pval);  // 値をポップする。(pval は呼び出し側で領域を確保する)
-bool my_stack_peek(StackRoot* stack, void* pval); // スタックトップの値を読む。(ポップしない)
+bool my_stack_pop(StackRoot* stack, void* pval, size_t* np);  // 値をポップする。(pval は呼び出し側で領域を確保する)
+bool my_stack_peek(StackRoot* stack, void* pval, size_t* np); // スタックトップの値を読む。(ポップしない)
 bool my_stack_empty(StackRoot* stack);  // スタックが空かどうかを返す。
 void my_stack_free(StackRoot* stack);  // スタックのリソースを解放する。
 
@@ -153,10 +153,10 @@ void my_stack_free(StackRoot* stack);  // スタックのリソースを解放�
 #define QueueCell BidiCell
 
 /* キュー関数 */
-MY_HEAP QueueRoot* my_queque_new();  // キューを作成する。
+MY_HEAP QueueRoot* my_queue_new();  // キューを作成する。
 void my_queue_push(QueueRoot* queue, void* value, size_t size);  // 値をプッシュする。
-void my_queue_deque(QueueRoot* queue, void* pval);  // 先頭を取り出す。
-void my_queue_peek(QueueRoot* queue, void* pval);  // 先頭の値を読む。
+bool my_queue_deque(QueueRoot* queue, void* pval, size_t* np);  // 先頭を取り出す。
+void my_queue_peek(QueueRoot* queue, void* pval, size_t* np);  // 先頭の値を読む。
 bool my_queue_empty(QueueRoot* queue);  // キューが空かどうかを返す。
 void my_queue_free(QueueRoot* queue);  // キューのリソースを解放する。
 
@@ -178,14 +178,15 @@ typedef struct tagSetEntry {
 } SetEntry;
 
 /* 関数のプロトタイプ */
-MY_HEAP SetEntry* my_set_new();
-int my_set_gethash(const char* item);
-SetEntry* my_set_getentry(SetEntry* set, const char* item);
-SetCell* my_set_cellnew(const char* item);
-void my_set_setcell(SetEntry* set, const char* item);
-bool my_set_exists(SetEntry* set, const char* item);
-int my_get_items(SetEntry* set, char* items[], int leng);
-void my_set_foreach(SetEntry* set, void(*callback)(const char* item));
-SetCell* my_set_getcell(SetEntry* set, const char* item);
+MY_HEAP SetEntry** my_set_new();
+MY_HEAP SetCell* my_set_cellnew(const char* item);
+void my_set_setitem(SetEntry** set, const char* item);
+bool my_set_exists(SetEntry** set, const char* item);
+MY_HEAP ListRoot* my_get_items(SetEntry** set);
+void my_set_foreach(SetEntry** set, void(*callback)(const char* item));
+SetCell* my_set_getcell(SetEntry** set, const char* item);
+bool my_set_empty(SetEntry** set);
+int my_set_count(SetEntry** set);
+void my_set_remove(SetEntry** set, const char* item);
 
 #endif

@@ -267,7 +267,7 @@ MY_HEAP DictEntry** my_dict_new() {
 int my_gethash(const char* key) {
   const char* p = key;
   int sum = 0;
-  int mask = 0xff;
+  int mask = DICT_ENTRY - 1;
   while (*p != 0) {
     sum += (int)*p;
     sum &= mask;
@@ -439,7 +439,7 @@ void my_dict_remove(DictEntry** dict, const char* key) {
   }
   if (entry->count == 1) {
     // エントリに対しセルが1つだけの場合
-    free(entry->first->payload);
+    //free(entry->first->payload);
     entry->count = 0;
     entry->first = NULL;
   }
@@ -535,23 +535,34 @@ void my_stack_push(StackRoot* stack, void* value, size_t size) {
 }
 
 /* 値をポップする。(pval は呼び出し側で領域を確保する) */
-bool my_stack_pop(StackRoot* stack, void* pval) {
+bool my_stack_pop(StackRoot* stack, void* pval, size_t* sz) {
     if (stack->count == 0)
         return false;
     memcpy(pval, stack->last->payload, stack->last->size);
-    StackCell* last = stack->last;
-    stack->last = stack->last->prev;
-    stack->last->next = NULL;
-    free(last->payload);
-    free(last);
+    if (stack->count > 0) {
+        stack->count--;
+        if (stack->count > 0) {
+            StackCell* plast = stack->last;
+            stack->last = plast->prev;
+            stack->last->next = NULL;
+            free(plast->payload);
+            free(plast);
+        }
+        else {
+            stack->first = NULL;
+            stack->last = NULL;
+            stack->current = NULL;
+        }
+    }
     return true;
 }
 
 /* スタックトップの値を読む。(ポップしない) */
-bool my_stack_peek(StackRoot* stack, void* pval) {
+bool my_stack_peek(StackRoot* stack, void* pval, size_t* sz) {
     if (stack->count == 0)
         return false;
     memcpy(pval, stack->last->payload, stack->last->size);
+    *sz = stack->last->size;
     return true;
 }
 
@@ -578,28 +589,62 @@ void my_stack_free(StackRoot* stack) {
  */
 
 /* キューを作成する。 */
-MY_HEAP QueueRoot* my_queque_new() {
+MY_HEAP QueueRoot* my_queue_new() {
     return my_stack_new();
 }
 
 /* 値をプッシュする。 */
 void my_queue_push(QueueRoot* queue, void* value, size_t size) {
-    my_stack_push(queue, value, size);
+    QueueCell* cell = (QueueCell*)malloc(sizeof(QueueCell));
+    cell->payload = malloc(size);
+    char* pl = cell->payload;
+    memcpy(pl, value, size);
+    cell->size = size;
+    if (queue->count == 0) {
+        queue->first = cell;
+        queue->last = cell;
+        cell->next = NULL;
+        cell->prev = NULL;
+    }
+    else {
+        QueueCell* p = queue->last;
+        queue->last = cell;
+        p->next = cell;
+        cell->next = NULL;
+        cell->prev = p;
+    }
+    queue->count++;
 }
 
 /* 先頭を取り出す。 */
-void my_queue_deque(QueueRoot* queue, void* pval) {
-    memset((uint8_t*)pval, (uint8_t*)(queue->first->payload), queue->first->size);
-    QueueCell* p = queue->first;
-    queue->first = p->next;
-    free(p->payload);
-    free(p);
-    return;
+bool my_queue_deque(QueueRoot* queue, void* pval, size_t* sz) {
+    if (queue->count == 0)
+        return false;
+    queue->count--;
+    char* pd = (char*)pval;
+    char* ps = (char*)queue->first->payload;
+    *sz = queue->first->size;
+    memcpy(pd, ps, *sz);
+    if (queue->count > 0) {
+        QueueCell* p = queue->first;
+        queue->first = p->next;
+        free(p->payload);
+        free(p);
+    }
+    else {
+        queue->first = NULL;
+        queue->last = NULL;
+        queue->current = NULL;
+    }
+    return true;
 }
 
 /* 先頭の値を読む。 */
-void my_queue_peek(QueueRoot* queue, void* pval) {
-    memset((uint8_t*)pval, (uint8_t*)(queue->first->payload), queue->first->size);
+void my_queue_peek(QueueRoot* queue, void* pval, size_t* sz) {
+    char* pd = (char*)pval;
+    char* ps = (char*)queue->first->payload;
+    *sz = queue->first->size;
+    memcpy(pd, ps, *sz);
     return;
 }
 
@@ -620,59 +665,178 @@ void my_queue_free(QueueRoot* queue) {
 */
 
 /* セットを作成する。 */
-MY_HEAP SetEntry* my_set_new() {
-    SetEntry* ent = (SetEntry*)malloc(sizeof(SetEntry));
-    ent->count = 0;
-    ent->first = NULL;
-    return ent;
-}
-
-/* ハッシュ値を得る。 */
-int my_set_gethash(const char* item) {
-    const char* p = item;
-    int sum = 0;
-    int mask = 0xff;
-    while (*p != 0) {
-        sum += (int)*p;
-        sum &= mask;
-        p++;
+MY_HEAP SetEntry** my_set_new() {
+    DictEntry** set = malloc(sizeof(void*) * DICT_ENTRY);
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        set[i] = (DictEntry*)malloc(sizeof(DictEntry));
+        memset(set[i], 0, sizeof(DictEntry));
     }
-    return sum;
-}
-
-/* エントリーを得る */
-SetEntry* my_set_getentry(SetEntry* set, const char* item) {
-    return NULL;
+    return set;
 }
 
 /* 新規セルを作成する。 */
-SetCell* my_set_cellnew(const char* item) {
-    return NULL;  
+MY_HEAP SetCell* my_set_cellnew(const char* item) {
+    SetCell* cell = (SetCell*)malloc(sizeof(SetCell));
+    cell->next = NULL;
+    cell->item = (char*)malloc(strlen(item) + 1);
+    strcpy(cell->item, item);
+    return cell;  
 }
 
 /* アイテムをセットにセットする。*/
-void my_set_setcell(SetEntry* set, const char* item) {
-    return;
+void my_set_setitem(SetEntry** set, const char* item) {
+  DictEntry* entry = my_getentry(set, item);
+  if (entry->first == NULL) {
+    // セルがないので追加
+    SetCell* cell = my_set_cellnew(item);
+    entry->first = cell;
+    entry->count = 1;
+  }
+  else {
+    // 同じキーのセルがあるか
+    if (my_set_exists(set, item)) {
+      // 同じキーのセルがある場合は何もしない。
+    }
+    else {
+      // 同じキーのセルがない場合はセル追加
+      SetCell* p = entry->first;
+      while (p->next != NULL) {
+        // 終端のセルまで繰り返す。
+        p = p->next;
+      }
+      // 新しいセルを追加する。
+      SetCell* cell = my_set_cellnew(item);
+      p->next = cell;
+      entry->count++;
+    }
+  }
 }
 
 /* アイテムがセットに含まれるかチェックする。 */
-bool my_set_exists(SetEntry* set, const char* item) {
-    return false;
+bool my_set_exists(SetEntry** set, const char* item) {
+    int hash = my_gethash(item);
+    SetEntry* entry = set[hash];
+    if (entry->count == 0)
+        return false;
+    else if (entry->count == 1)
+        return true;
+    else {
+        SetCell* cell = entry->first;
+        while (true) {
+            if (strcmp(item, cell->item) == 0)
+                return true;
+            cell = cell->next;
+            if (cell == NULL)
+                return false;
+        }  
+    }
 }
 
 /* セットに含まれるアイテムをすべて取得する。 */
-int my_get_items(SetEntry* set, char* items[], int leng) {
-    return 0;
+ListRoot* my_get_items(SetEntry** set) {
+  ListRoot* items = my_list_new();
+  SetCell* cell = NULL;
+  for (int i = 0; i < DICT_ENTRY; i++) {
+    SetEntry* entry = set[i];
+    for (int i = 0; i < entry->count; i++) {
+      if (i == 0) {
+        cell = entry->first;
+      }
+      else {
+        if (cell != NULL)
+          cell = cell->next;
+      }
+      my_list_append(items, cell->item, strlen(cell->item) + 1);
+    }
+  }
+  return items;
 }
 
 /* セットに含まれるアイテムに関数を適用する。 */
-void my_set_foreach(SetEntry* set, void(*callback)(const char* item)) {
-    return;
+void my_set_foreach(SetEntry** set, void(*callback)(const char* item)) {
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        if (set[i] == NULL)
+            continue; 
+        if (set[i]->count == 1) {
+            callback(set[i]->first->item);
+        }
+        else {
+            SetCell* cell = set[i]->first;
+            while (cell != NULL) {
+                 callback(cell->item);
+                 cell = cell->next;
+            }
+        }
+    }
 }
 
 /* アイテムのセルを取得する。 */
-SetCell* my_set_getcell(SetEntry* set, const char* item) {
-    return NULL;
+SetCell* my_set_getcell(SetEntry** set, const char* item) {
+    int hash = my_gethash(item);
+    SetCell* cell = set[hash];
+    return cell;
 }
 
+/* 空集合かをチェックする。 */
+bool my_set_empty(SetEntry** set) {
+    bool ret = false;
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        ret = set[i]->count > 0 ? false : true;
+        if (ret)
+            break;
+    }
+    return ret;
+}
 
+/* 要素の数を返す。*/
+int my_set_count(SetEntry** set) {
+    int count = 0;
+    for (int i = 0; i < DICT_ENTRY; i++) {
+        count += set[i]->count;
+    }
+    return count;
+}
+
+/* 要素を削除する。 */
+void my_set_remove(SetEntry** set, const char* item) {
+  SetEntry* entry = my_getentry(set, item);
+  if (entry->count == 0) {
+    // キーに対するデータが存在しない場合
+    return;
+  }
+  if (entry->count == 1) {
+    // エントリに対しセルが1つだけの場合
+    //free(entry->first->payload);
+    entry->count = 0;
+    entry->first = NULL;
+  }
+  else {
+    // エントリに対しセルが2つ以上の場合
+    SetCell* cell = entry->first;
+    SetCell* prev = NULL;
+    while (true) {
+      if (strcmp(cell->item, item) == 0) {
+        if (prev == NULL) {
+          // エントリ最初のセルの場合
+          entry->first = cell->next;
+          entry->count--;
+          //free(cell->value);
+        }
+        else {
+          // エントリ途中または最後のセルの場合
+          prev->next = cell->next;
+          entry->count--;
+          //free(cell->value);
+        }
+        break;
+      }
+      else if (cell->next == NULL) {
+        break;
+      }
+      else {
+        prev = cell;
+        cell = cell->next;
+      }
+    }
+  }
+}
