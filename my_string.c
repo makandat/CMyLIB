@@ -97,6 +97,18 @@ void my_string_append(MyString* str, const char* s) {
     return;
 }
 
+/* 文字列を先頭に追加する。 */
+void my_string_append2(MyString* str, const char* s) {
+    size_t sz = str->size + strlen(s) + 1;
+    char* buf = (char*)malloc(sz);
+    strcpy(buf, s);
+    strcat(buf, str->data);
+    str->size = sz - 1;
+    free(str->data);
+    str->data = buf;
+    return;
+}
+
 /*  文字列を検索する。*/
 int my_string_indexof(MyString* str, const char* s, int start) {
     if (start >= strlen(str->data) - strlen(s))
@@ -580,26 +592,35 @@ MY_HEAP MyStringArray* my_stringarray_new() {
     return ret;
 }
 
-/* 文字列配列オブジェクトに文字列オブジェクトを追加する。*/
-void my_stringarray_append(MyStringArray* array, MyString* str) {
-    MyString* str2 = my_string_dup(str);
-    str2->next = NULL;
+/* 文字列配列オブジェクトにの最後の要素の後に文字列を追加する。 */
+void my_stringarray_append(MyStringArray* array, char* s) {
     if (array->length == 0) {
-        array->first = str2;
-        array->last = str2;
+        array->first = my_string_wrap(s);
+        array->last = array->first;
         array->length = 1;
     }
     else {
-        array->last->next = str2;
-        array->last = str2;
-        array->length += 1;
+        MyString* p = array->last;
+        array->last = my_string_wrap(s);
+        array->last->next = NULL;
+        p->next = array->last;
+        array->length++;
     }
 }
 
-/* 文字列配列オブジェクトに文字列を追加する。 */
+/* 文字列配列オブジェクトの最初の要素の前ににに文字列を追加する。*/
 void my_stringarray_append2(MyStringArray* array, char* s) {
-    MY_HEAP MyString* str = my_string_wrap(s);
-    my_stringarray_append(array, str);
+    if (array->length == 0) {
+        array->first = my_string_wrap(s);
+        array->last = array->first;
+        array->length = 1;
+    }
+    else {
+        MyString* p = array->first;
+        array->first = my_string_wrap(s);
+        array->first->next = p;
+        array->length++;
+    }
 }
 
 /* 文字列配列オブジェクトの要素を結合した C 文字列を返す。p が NULL でない場合は、文字列 p を挟んで結合する。 */
