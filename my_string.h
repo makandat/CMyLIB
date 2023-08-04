@@ -34,6 +34,7 @@ const char* my_string_get(MyString* str); // 内部の文字列 (char*) を返�
 void my_string_set(MyString* str, const char* s);  // 内部の文字列を更新する。
 MY_HEAP MyString* my_string_dup(MyString* str);  // 文字列オブジェクトを複製する。
 void my_string_append(MyString* str, const char* s);  // 文字列を追加する。
+void my_string_append2(MyString* str, const char* s);  // 文字列を先頭に追加する。
 int my_string_indexof(MyString* str, const char* s, int start);  // 文字列を検索する。
 bool my_string_equal(MyString* str, const char* s);  // 文字列が同じか判別する。
 int my_string_compare(MyString* str, const char* s);  // 文字列を比較する。
@@ -55,8 +56,8 @@ bool my_string_startswith(MyString* str, char* s); // 文字列の開始が指�
 bool my_string_endswith(MyString* str, char* s); // 文字列の終了が指定した文字列なら true を返す。
 MY_HEAP MyString* my_string_new();  // 文字列オブジェクトを作成する。
 MY_HEAP MyStringArray* my_stringarray_new();  // 文字列配列を作成する。
-void my_stringarray_append(MyStringArray* array, MyString* str);  // 文字列配列オブジェクトに文字列オブジェクトを追加する。
-void my_stringarray_append2(MyStringArray* array, char* s);  // 文字列配列オブジェクトに文字列を追加する。
+void my_stringarray_append(MyStringArray* array, char* s);  // 文字列配列オブジェクトの最後の要素の後にに文字列を追加する。
+void my_stringarray_append2(MyStringArray* array, char* s);  // 文字列配列オブジェクトの最初の要素の前にに文字列を追加する。
 MY_HEAP char* my_stringarray_tostr(MyStringArray* array, char* c);  // 文字列配列オブジェクトの要素を結合した C 文字列を返す。
 MY_HEAP char* my_bytes_new(int size);  // 0 クリアされたバイトバッファを作成する。
 void my_string_times(char* buf, char c, size_t n); // n 個の文字からなる文字列を指定されたバッファにコピーする。
