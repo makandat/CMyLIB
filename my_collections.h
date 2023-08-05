@@ -178,15 +178,15 @@ typedef struct tagSetEntry {
 } SetEntry;
 
 /* 関数のプロトタイプ */
-MY_HEAP SetEntry** my_set_new();
-MY_HEAP SetCell* my_set_cellnew(const char* item);
-void my_set_setitem(SetEntry** set, const char* item);
-bool my_set_exists(SetEntry** set, const char* item);
-MY_HEAP ListRoot* my_get_items(SetEntry** set);
-void my_set_foreach(SetEntry** set, void(*callback)(const char* item));
-SetCell* my_set_getcell(SetEntry** set, const char* item);
-bool my_set_empty(SetEntry** set);
-int my_set_count(SetEntry** set);
-void my_set_remove(SetEntry** set, const char* item);
+MY_HEAP SetEntry** my_set_new();// 空のセットを作成する。
+MY_HEAP SetCell* my_set_cellnew(const char* item); // 空のセルを作成する。
+void my_set_setitem(SetEntry** set, const char* item); // 要素をセットに追加する。
+bool my_set_exists(SetEntry** set, const char* item); // 要素がすでにセットに含まれているか判別する。
+MY_HEAP ListRoot* my_get_items(SetEntry** set); // セットの要素一覧をリストとして取得する。
+void my_set_foreach(SetEntry** set, void(*callback)(const char* item)); // セットのすべての要素に対してコールバック関数を適用する。
+SetCell* my_set_getcell(SetEntry** set, const char* item); // 指定した要素のセルを得る。
+bool my_set_empty(SetEntry** set);// セットが空か判別する。
+int my_set_count(SetEntry** set);// セットに含まれる要素数を得る。
+void my_set_remove(SetEntry** set, const char* item); // セットから要素を削除する。
 
 #endif
