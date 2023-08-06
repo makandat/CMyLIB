@@ -1,4 +1,4 @@
-/* my_collections.c */
+/* my_collections.c v1.1 */
 #include "my_collections.h"
 #include <stdbool.h>
 #pragma GCC diagnostic ignored "-Wincompatible-pointer-types"
@@ -193,6 +193,12 @@ IndexCell* my_ixlist_get_indexcell(IxRoot* list, int idx) {
 void* my_ixlist_getval(IxRoot* list, int idx) {
     IndexCell* ixcell = my_ixlist_get_indexcell(list, idx);
     return ixcell->cell->payload;
+}
+
+/* インデックスに対応するペイロードのサイズ得る。 */
+size_t my_ixlist_getsize(IxRoot* list, int idx) {
+    IndexCell* ixcell = my_ixlist_get_indexcell(list, idx);
+    return ixcell->cell->size;
 }
 
 /* リストセルの先頭を返す。*/
@@ -580,6 +586,46 @@ void my_stack_free(StackRoot* stack) {
         p = cell;
         cell = cell->next;
         free(p);
+    }
+}
+
+/* 最初の要素 (bottom) へ移動 */
+void my_stack_first(StackRoot* stack, void* pval, size_t* np) {
+    stack->current = stack->first;
+    *np = stack->current->size;
+    memcpy(pval, stack->current->payload, *np);
+}
+
+/* 最後の要素 (top) へ移動 */
+void my_stack_last(StackRoot* stack, void* pval, size_t* np) {
+    stack->current = stack->last;
+    *np = stack->current->size;
+    memcpy(pval, stack->current->payload, *np);
+}
+
+/* 次の要素へ移動 */
+bool my_stack_next(StackRoot* stack, void* pval, size_t* np) {
+    if (stack->current->next == NULL) {
+        return false;
+    }
+    else {
+        stack->current = stack->current->next;
+        *np = stack->current->size;
+        memcpy(pval, stack->current->payload, *np);
+        return true;
+    }
+}
+
+/* 前の要素へ移動 */
+bool my_stack_prev(StackRoot* stack, void* pval, size_t* np) {
+    if (stack->current->prev == NULL) {
+        return false;
+    }
+    else {
+        stack->current = stack->current->prev;
+        *np = stack->current->size;
+        memcpy(pval, stack->current->payload, *np);
+        return true;
     }
 }
 

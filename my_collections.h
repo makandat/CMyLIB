@@ -1,4 +1,4 @@
-/* my_collections.h */
+/* my_collections.h v1.1 */
 #ifndef MY_COLLECTIONS_H
 #define MY_COLLECTIONS_H
 #include "my_object.h"
@@ -75,6 +75,7 @@ MY_HEAP IxRoot* my_ixlist_new(); // リストを初期化する。
 void my_ixlist_setval(IxRoot* root, void* value, size_t size);  // リストにペイロードを追加する。
 void my_ixlist_append(IxRoot*, IxCell*);  // リストにセルを追加する。
 void* my_ixlist_getval(IxRoot*, int);  // インデックスに対応するペイロードを得る。
+size_t my_ixlist_getsize(IxRoot*, int);  // インデックスに対応するペイロードのサイズ得る。v1.1
 IndexCell* my_ixlist_get_indexcell(IxRoot*, int);  // インデックスに対応するセルを得る。
 IxCell* my_ixlist_first(IxRoot* list);  // リストセルの先頭を返す。
 IxCell* my_ixlist_next(IxRoot* list);  // 次のリストセルを返す。
@@ -145,6 +146,10 @@ bool my_stack_pop(StackRoot* stack, void* pval, size_t* np);  // 値をポップ
 bool my_stack_peek(StackRoot* stack, void* pval, size_t* np); // スタックトップの値を読む。(ポップしない)
 bool my_stack_empty(StackRoot* stack);  // スタックが空かどうかを返す。
 void my_stack_free(StackRoot* stack);  // スタックのリソースを解放する。
+void my_stack_first(StackRoot* stack, void* pval, size_t* np);  // 最初の要素 (bottom) へ移動 v1.1
+void my_stack_last(StackRoot* stack, void* pval, size_t* np);  // 最後の要素 (top) へ移動 v1.1
+bool my_stack_next(StackRoot* stack, void* pval, size_t* np);  // 次の要素へ移動 v1.1
+bool my_stack_prev(StackRoot* stack, void* pval, size_t* np);  // 前の要素へ移動 v1.1
 
 /*
  *  Queue
