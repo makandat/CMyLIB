@@ -1,4 +1,4 @@
-/* my_string.c */
+/* my_string.c v1.2 */
 #include "my_string.h"
 
 /* MyString オブジェクトの参照カウントを増やす。*/
@@ -370,6 +370,87 @@ MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr) {
     ret->data = buf2;
     ret->size = strlen(ret->data);
     return ret;
+}
+
+/* 文字列内の部分文字列を置き換える。元の文字列は新しい文字列で置き換わる。*/
+void my_string_replace2(MyString* str, char* target, char* repstr) {
+    static char zero = 0;
+    char* buf;
+    size_t sz;
+    MyString* temp;
+    MyStringArray* strarray = my_stringarray_new();
+    char* p = strstr(str->data, target);
+    char* p0;
+    int i = 0;
+    char* ptr[100];  // target が見つかった位置
+    // ターゲットの位置を見つける。
+    while (p != NULL) {
+        ptr[i] = p;
+        i++;
+        p0 = p;
+        p = strstr(p + strlen(target), target);
+    }
+    ptr[i] = p0 + strlen(target);
+    // ターゲットの位置をもとにもとの文字列を分解する。
+    int n = i;  // もとの文字列に含まれるターゲットに数
+    for (int i = 0; i <= n; i++) {
+        // １個目の場合
+        if (strarray->first == NULL) {
+            if (ptr[0] == str->data) {
+                // 元の文字列の先頭にターゲットが見つかった場合
+                strarray->first = my_string_new();
+                strarray->first->data = &zero;
+                strarray->length = 1;
+                strarray->last = strarray->first;
+            }
+            else { // 元の文字列の先頭以外でターゲットが見つかった場合
+                sz = ptr[0] - str->data + 1;
+                buf = (char*)malloc(sz);
+                strncpy(buf, str->data, sz - 1);
+                strarray->first = my_string_new();
+                strarray->first->data = buf;
+                strarray->first->size = sz;
+                strarray->last = strarray->first;
+            }
+            strarray->length = 1;  // 1 個見つかった
+        }
+        else {  // ２個目以降
+            p = ptr[i - 1] + strlen(target);  // 中間文字列の位置
+            sz = ptr[i] - p;  // 中間文字列の長さ
+            if (i == n)
+                sz = strlen(p);
+            buf = (char*)malloc(sz + 1);
+            strncpy(buf, p, sz);
+            temp = strarray->last;
+            strarray->last = my_string_new();
+            strarray->last->data = buf;
+            temp->next = strarray->last;
+            strarray->length++;
+        }
+    }
+    // 文字列のリストを結合して１つの文字列を作る。
+    MyString* p1 = strarray->first;
+    sz = 0;
+    for (int i = 0; i < strarray->length; i++) {  // 結合後の文字列の長さを計算する。
+        sz += strlen(p1->data);
+        sz += strlen(repstr);
+        p1 = p1->next;
+    }
+    // 結合後の文字列用バッファを用意する。
+    char* buf2 = my_bytes_new(sz + 1);
+    p1 = strarray->first;
+    // 部分文字列を置換文字列で結合する。
+    for (int i = 0; i < strarray->length; i++) {
+        strcat(buf2, p1->data);
+        if (i < strarray->length - 1)
+          strcat(buf2, repstr);
+        p1 = p1->next;
+    }
+    
+    // 結合後の文字列で元の文字列を置き換える。
+    free(str->data);
+    str->data = buf2;
+    str->size = strlen(str->data);
 }
 
 /* 文字列の前後の空白文字を削除する。 */

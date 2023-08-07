@@ -1,4 +1,4 @@
-/* my_string.h */
+/* my_string.h v1.2 */
 #ifndef MY_STRING_H
 #define MY_STRING_H
 #include "my_object.h"
@@ -43,6 +43,7 @@ MY_HEAP MyString* my_string_substring(MyString* str, int start, int length);  //
 MY_HEAP MyStringArray* my_string_split(MyString* str, char separator);  // 文字列を分割する。
 MY_HEAP MyString* my_string_join(MyStringArray* strarray, char separator);  // 文字列を結合する。
 MY_HEAP MyString* my_string_replace(MyString* str, char* target, char* repstr);  // 文字列内の部分文字列を置換する。
+void my_string_replace2(MyString* str, char* target, char* repstr);  // 文字列内の部分文字列を置換する。元の文字列は新しい文字列で置き換わる。
 MY_HEAP MyString* my_string_trim(MyString* str);  // 文字列の前後の空白文字を削除する。
 MY_HEAP MyString* my_string_trim_begin(MyString* str);  // 文字列の前の空白文字を削除する。
 MY_HEAP MyString* my_string_trim_end(MyString* str);  // 文字列の後の空白文字を削除する。
